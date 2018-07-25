@@ -1,0 +1,7 @@
+6
+Joe, 3H, 4H, 5H, 6H, 8H
+Bob, 3C, 3D, 3S, 8C, 10D
+Sally, AC, 10C, 5C, 2S, 2C
+David, KS, JS, QS, 10S, 9S
+Shelly, 7S, AS, 7H, 7D, 7C
+Sue, 8S, 9C, 10H, JC, QH
