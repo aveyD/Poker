@@ -20,6 +20,11 @@ public class PlayerTest {
 		player2 = createPlayer("Shelly", Card.TWO_SPADE, Card.THREE_SPADE, Card.FOUR_SPADE, Card.FIVE_SPADE, Card.ACE_HEART);
 		assertEquals(1, player1.compareTo(player2));
 		
+		// High card David Win
+		player1 = createPlayer("David", Card.KING_HEART, Card.THREE_HEART, Card.FOUR_HEART, Card.FIVE_HEART, Card.ACE_SPADE);
+		player2 = createPlayer("Shelly", Card.SIX_SPADE, Card.THREE_SPADE, Card.FOUR_SPADE, Card.FIVE_SPADE, Card.KING_HEART);
+		assertEquals(1, player1.compareTo(player2));
+		
 		// High card Shelly Win
 		player1 = createPlayer("David", Card.TWO_HEART, Card.THREE_HEART, Card.FOUR_HEART, Card.FIVE_HEART, Card.ACE_SPADE);
 		player2 = createPlayer("Shelly", Card.KING_SPADE, Card.THREE_SPADE, Card.FOUR_SPADE, Card.FIVE_SPADE, Card.ACE_HEART);

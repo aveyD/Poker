@@ -218,6 +218,26 @@ public class PokerTest {
 		Poker.main(null);
 	}
 	
+	@Test
+	public void testPokerDealer() throws Exception {
+		int numDeals = 0;
+		boolean winningHand = false;
+		Poker.dealer = true;
+		Poker.notTest = false;
+		Poker.numPlayers = 6;
+		while (winningHand == false) {
+			Poker.main(null);
+			for (Player player : Poker.players) {
+				if (player.getPokerHandRank().equals(PokerHandRank.STRAIGHT_FLUSH)) {
+					System.out.println("We have a winner!!! after [" + numDeals + "] deals.");
+					System.out.println(player.printPlayerHand());
+					winningHand = true;
+				}
+				numDeals++;
+			}
+		}
+	}
+	
 	private Player createPlayer(String name, Card ... cards)
 	{
 		Player player = new Player();

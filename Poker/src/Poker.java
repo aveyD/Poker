@@ -25,6 +25,8 @@ public class Poker {
 											// If you want to read from a file change this to false
 	static boolean readFromFile = false;
 	static boolean dealer = true;
+	static boolean notTest = true;
+	static int numPlayers = 0;
 	static File file = new File("E:\\David\\Desktop\\poker.txt"); // TODO: Set this to the file of your choosing.
 
 	public static void main(String[] args) throws Exception {
@@ -32,24 +34,21 @@ public class Poker {
 		BufferedReader bufferRead = null;
 
 		if (dealer) {
-			bufferRead = new BufferedReader(new InputStreamReader(System.in));
-
-			System.out.print("Enter the number of players playing poker: ");
-
-			int numPlayers = getNumberOfPlayers(bufferRead, readFromConsole);
+			if (notTest) {
+				bufferRead = new BufferedReader(new InputStreamReader(System.in));
+	
+				System.out.print("Enter the number of players playing poker: ");
+	
+				numPlayers = getNumberOfPlayers(bufferRead, readFromConsole);
+			}
 			if (numPlayers <= 1 || numPlayers > 10) {
 				allValid = false;
 				System.out.println("Invalid number of players. Must be between 2-10");
 			} else {
 				players = new ArrayList<Player>(numPlayers);
 				initPlayers(players, numPlayers);
-				Dealer dealer = new Dealer();
-				allValid = dealer.deal(players);
-				for (Player player : players) {
-					System.out.println(player.printPlayerHand());
-				}
+				allValid = dealToPlayers(players);
 			}
-
 		} else {
 			if (readFromConsole) {
 				bufferRead = new BufferedReader(new InputStreamReader(System.in));
@@ -104,6 +103,10 @@ public class Poker {
 				playersWithBestHand = complexRules(playersWithBestHand, bestHand);
 			}
 
+			for (Player player : playersWithBestHand) {
+				player.setWinner(true);
+			}
+
 			if (playersWithBestHand.size() > 1) {
 				System.out.print("\nAnd the winners are: ");
 			} else {
@@ -116,6 +119,15 @@ public class Poker {
 		} else {
 			System.out.print("Game Over!");
 		}
+	}
+
+	private static boolean dealToPlayers(List<Player> players) {
+		Dealer dealer = new Dealer();
+		boolean allValid = dealer.deal(players);
+		for (Player player : players) {
+			System.out.println(player.printPlayerHand());
+		}
+		return allValid;
 	}
 
 	private static void initPlayers(List<Player> players, int numPlayers) {

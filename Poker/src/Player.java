@@ -12,6 +12,7 @@ public class Player {
 	private List<Card> cards;
 	private PokerHandRank pokerHandRank;
 	private Rank highPair;
+	private boolean winner = false;
 
 	public Player() {
 	}
@@ -53,6 +54,14 @@ public class Player {
 		this.highPair = highPair;
 	}
 
+	public boolean isWinner() {
+		return winner;
+	}
+
+	public void setWinner(boolean winner) {
+		this.winner = winner;
+	}
+
 	@Override
 	public String toString() {
 		return getName();
@@ -72,9 +81,9 @@ public class Player {
 		List<Card> player1Cards = this.getCards();
 		List<Card> player2Cards = player.getCards();
 
-		// sort from lowest to highest
-		Collections.sort(player1Cards);
-		Collections.sort(player2Cards);
+		// sort from highest to lowest
+		Collections.sort(player1Cards, Collections.reverseOrder());
+		Collections.sort(player2Cards, Collections.reverseOrder());
 
 		return compareCards(player1Cards, player2Cards);
 	}
