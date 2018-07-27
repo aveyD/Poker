@@ -25,7 +25,7 @@ public class Poker {
 											// If you want to read from a file change this to false
 	static boolean readFromFile = false;
 	static boolean dealer = true;
-	static boolean notTest = true;
+	static boolean texasHoldem = false;
 	static int numPlayers = 0;
 	static File file = new File("E:\\David\\Desktop\\poker.txt"); // TODO: Set this to the file of your choosing.
 
@@ -34,7 +34,7 @@ public class Poker {
 		BufferedReader bufferRead = null;
 
 		if (dealer) {
-			if (notTest) {
+			if (numPlayers == 0) {
 				bufferRead = new BufferedReader(new InputStreamReader(System.in));
 	
 				System.out.print("Enter the number of players playing poker: ");
@@ -52,8 +52,8 @@ public class Poker {
 		} else {
 			if (readFromConsole) {
 				bufferRead = new BufferedReader(new InputStreamReader(System.in));
-			} else if (readFromFile)// read from file
-			{
+			} else if (readFromFile) {
+				// read from file
 				bufferRead = new BufferedReader(new FileReader(file));
 			}
 			// first we need to input the number of players
@@ -71,7 +71,7 @@ public class Poker {
 		}
 		if (allValid) {
 			// all players hands are valid. Now it's time to rank them
-			rankHands();
+			rankAllHands();
 			System.out.print("Player ranks: \n-------------\n");
 
 			// print out what hand each player has
@@ -122,8 +122,12 @@ public class Poker {
 	}
 
 	private static boolean dealToPlayers(List<Player> players) {
-		Dealer dealer = new Dealer();
-		boolean allValid = dealer.deal(players);
+		boolean allValid = false;
+		if (texasHoldem) {
+			allValid = Dealer.texasHoldemDeal(players);
+		} else {
+			allValid = Dealer.regularDeal(players);
+		}
 		for (Player player : players) {
 			System.out.println(player.printPlayerHand());
 		}
@@ -499,91 +503,100 @@ public class Poker {
 		return list.toString().replaceAll("[\\[.\\].\\s+]", "");
 	}
 
+	public static void rankAllHands() {
+		for (Player player : players) {
+			if (texasHoldem) {
+				// TODO: rank hands for texas holdem
+				System.out.println("Texas holdem ranking not implemented yet...");
+			} else {
+				rankHands(player, player.getCards());
+			}
+		}
+	}
+	
 	/**
 	 * Rank the hands from best to worst and set it on the player objects
 	 */
-	public static void rankHands() {
-		for (Player player : players) {
-			Set<Suit> suits = new HashSet<Suit>();
-			Set<Rank> ranks = new HashSet<Rank>();
-			Map<Rank, Integer> rankMap = new HashMap<Rank, Integer>();
-			List<Rank> fullListOfRanks = new ArrayList<Rank>();
+	public static void rankHands(Player player, List<Card> hand) {
+		Set<Suit> suits = new HashSet<Suit>();
+		Set<Rank> ranks = new HashSet<Rank>();
+		Map<Rank, Integer> rankMap = new HashMap<Rank, Integer>();
+		List<Rank> fullListOfRanks = new ArrayList<Rank>();
 
-			// add suits and ranks to a set to remove duplicates
-			// also add each rank to a map with the count of how many times it appears
-			for (Card card : player.getCards()) {
-				Rank rank = card.getRank();
-				suits.add(card.getSuit());
-				ranks.add(rank);
-				fullListOfRanks.add(rank);
+		// add suits and ranks to a set to remove duplicates
+		// also add each rank to a map with the count of how many times it appears
+		for (Card card : hand) {
+			Rank rank = card.getRank();
+			suits.add(card.getSuit());
+			ranks.add(rank);
+			fullListOfRanks.add(rank);
 
-				Integer count = rankMap.get(rank);
-				rankMap.put(rank, (count == null) ? 1 : count + 1);
-			}
+			Integer count = rankMap.get(rank);
+			rankMap.put(rank, (count == null) ? 1 : count + 1);
+		}
 
-			// if it's a flush there will only be one suit
-			if (suits.size() == 1) {
-				player.setPokerHandRank(PokerHandRank.FLUSH);
-			}
+		// if it's a flush there will only be one suit
+		if (suits.size() == 1) {
+			player.setPokerHandRank(PokerHandRank.FLUSH);
+		}
 
-			// if it's a high card or a strait there will be 5 ranks
-			if (ranks.size() == 5) {
-				boolean straight = true;
-				// sort the list
-				Collections.sort(fullListOfRanks);
-				for (int i = 0; i < fullListOfRanks.size() - 1; i++) {
-					// check if the ranks are consecutive or not
-					if (fullListOfRanks.get(i).ordinal() + 1 != fullListOfRanks.get(i + 1).ordinal()) {
-						// Not a strait
-						straight = false;
-						break;
-					}
-				}
-
-				if (straight) {
-					// it's both a straight and a flush
-					if (suits.size() == 1) {
-						player.setPokerHandRank(PokerHandRank.STRAIGHT_FLUSH);
-					} else {
-						player.setPokerHandRank(PokerHandRank.STRAIGHT);
-					}
-				} else if (suits.size() != 1) {
-					player.setPokerHandRank(PokerHandRank.HIGH_CARD);
+		// if it's a high card or a strait there will be 5 ranks
+		if (ranks.size() == 5) {
+			boolean straight = true;
+			// sort the list
+			Collections.sort(fullListOfRanks);
+			for (int i = 0; i < fullListOfRanks.size() - 1; i++) {
+				// check if the ranks are consecutive or not
+				if (fullListOfRanks.get(i).ordinal() + 1 != fullListOfRanks.get(i + 1).ordinal()) {
+					// Not a strait
+					straight = false;
+					break;
 				}
 			}
 
-			// if it's a one pair there will be 4 ranks
-			if (ranks.size() == 4) {
-				player.setPokerHandRank(PokerHandRank.ONE_PAIR);
+			if (straight) {
+				// it's both a straight and a flush
+				if (suits.size() == 1) {
+					player.setPokerHandRank(PokerHandRank.STRAIGHT_FLUSH);
+				} else {
+					player.setPokerHandRank(PokerHandRank.STRAIGHT);
+				}
+			} else if (suits.size() != 1) {
+				player.setPokerHandRank(PokerHandRank.HIGH_CARD);
+			}
+		}
+
+		// if it's a one pair there will be 4 ranks
+		if (ranks.size() == 4) {
+			player.setPokerHandRank(PokerHandRank.ONE_PAIR);
+			player.setHighPair(getHighPair(rankMap, 2));
+		}
+
+		// if it's three of a kind or two of a kind there will be 3 ranks
+		if (ranks.size() == 3) {
+			// the rank map will contain 2 ranks with value 2
+			if (rankMap.containsValue(2)) {
+				player.setPokerHandRank(PokerHandRank.TWO_PAIR);
 				player.setHighPair(getHighPair(rankMap, 2));
 			}
-
-			// if it's three of a kind or two of a kind there will be 3 ranks
-			if (ranks.size() == 3) {
-				// the rank map will contain 2 ranks with value 2
-				if (rankMap.containsValue(2)) {
-					player.setPokerHandRank(PokerHandRank.TWO_PAIR);
-					player.setHighPair(getHighPair(rankMap, 2));
-				}
-				// the rank map will contain 1 rank with value 3
-				else if (rankMap.containsValue(3)) {
-					player.setPokerHandRank(PokerHandRank.THREE_OF_A_KIND);
-					player.setHighPair(getHighPair(rankMap, 3));
-				}
+			// the rank map will contain 1 rank with value 3
+			else if (rankMap.containsValue(3)) {
+				player.setPokerHandRank(PokerHandRank.THREE_OF_A_KIND);
+				player.setHighPair(getHighPair(rankMap, 3));
 			}
+		}
 
-			// if it's a full house or four of a kind there will be 2 ranks
-			if (ranks.size() == 2) {
-				// the rank map will contain 1 rank with value 4
-				if (rankMap.containsValue(4)) {
-					player.setPokerHandRank(PokerHandRank.FOUR_OF_A_KIND);
-					player.setHighPair(getHighPair(rankMap, 4));
-				}
-				// the rank map will contain 1 rank with value 3 and 1 rank with value 2
-				else if (rankMap.containsValue(3) && rankMap.containsValue(2)) {
-					player.setPokerHandRank(PokerHandRank.FULL_HOUSE);
-					player.setHighPair(getHighPair(rankMap, 3));
-				}
+		// if it's a full house or four of a kind there will be 2 ranks
+		if (ranks.size() == 2) {
+			// the rank map will contain 1 rank with value 4
+			if (rankMap.containsValue(4)) {
+				player.setPokerHandRank(PokerHandRank.FOUR_OF_A_KIND);
+				player.setHighPair(getHighPair(rankMap, 4));
+			}
+			// the rank map will contain 1 rank with value 3 and 1 rank with value 2
+			else if (rankMap.containsValue(3) && rankMap.containsValue(2)) {
+				player.setPokerHandRank(PokerHandRank.FULL_HOUSE);
+				player.setHighPair(getHighPair(rankMap, 3));
 			}
 		}
 	}

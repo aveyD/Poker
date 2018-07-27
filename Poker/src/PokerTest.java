@@ -65,7 +65,7 @@ public class PokerTest {
 		assertNull(Poker.players.get(7).getPokerHandRank());
 		assertNull(Poker.players.get(8).getPokerHandRank());
 		
-		Poker.rankHands();
+		Poker.rankAllHands();
 		
 		assertEquals(PokerHandRank.HIGH_CARD, Poker.players.get(0).getPokerHandRank());
 		assertEquals(PokerHandRank.ONE_PAIR, Poker.players.get(1).getPokerHandRank());
@@ -223,7 +223,6 @@ public class PokerTest {
 		int numDeals = 0;
 		boolean winningHand = false;
 		Poker.dealer = true;
-		Poker.notTest = false;
 		Poker.numPlayers = 6;
 		while (winningHand == false) {
 			Poker.main(null);

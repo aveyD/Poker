@@ -1,3 +1,4 @@
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -7,10 +8,13 @@ import java.util.Set;
 
 public class Dealer {
 
-	private Map<Integer, Card> initDeck() {
+	private static List<Card> flopTurnRiver = new ArrayList<Card>();
+
+	private static Map<Integer, Card> initDeck() {
 		Map<Integer, Card> deck = new HashMap<Integer, Card>();
 		int i = 0;
 
+		// TODO: fix this to loop over and add
 		deck.put(i, Card.TWO_HEART);
 		deck.put(i++, Card.TWO_CLUB);
 		deck.put(i++, Card.TWO_SPADE);
@@ -67,17 +71,31 @@ public class Dealer {
 		return deck;
 	}
 
-	public boolean deal(List<Player> players) {
-		Map<Integer, Card> deck = initDeck();
+	public static boolean regularDeal(List<Player> players) {
 		int handSize = 5;
+		return deal(players, handSize, false);
+	}
+
+	public static boolean texasHoldemDeal(List<Player> players) {
+		int handSize = 2;
+		return deal(players, handSize, true);
+	}
+
+	public static boolean deal(List<Player> players, int handSize, boolean flopTurnRiver) {
+		Map<Integer, Card> deck = initDeck();
 		Random rng = new Random();
 		Set<Integer> generated = new LinkedHashSet<Integer>();
-		while (generated.size() < (handSize * players.size())) {
+		int playerCards = (handSize * players.size());
+		while (generated.size() < playerCards) {
 			Integer next = rng.nextInt(deck.size() - 1) + 1;
 			generated.add(next);
 		}
-//		System.out.println(deck);
-//		System.out.println("Dealer deals: " + generated);
+		if (flopTurnRiver) {
+			while (generated.size() < (playerCards + 5)) {
+				Integer next = rng.nextInt(deck.size() - 1) + 1;
+				generated.add(next);
+			}
+		}
 		int playerNum = 0;
 
 		for (Integer card : generated) {
@@ -85,7 +103,12 @@ public class Dealer {
 			if (player.getCards().size() < handSize) {
 				player.getCards().add(deck.get(card));
 			} else {
-				System.out.println("Something went wrong.");
+				if (flopTurnRiver) {
+					System.out.println("We made it to the flop/turn/river.");
+					getFlopTurnRiver().add(deck.get(card));
+				} else {
+					System.out.println("Something went wrong.");
+				}
 			}
 			if (playerNum >= players.size() - 1) {
 				playerNum = 0;
@@ -94,5 +117,13 @@ public class Dealer {
 			}
 		}
 		return true;
+	}
+
+	public static List<Card> getFlopTurnRiver() {
+		return flopTurnRiver;
+	}
+
+	public void setFlopTurnRiver(List<Card> flopTurnRiver) {
+		Dealer.flopTurnRiver = flopTurnRiver;
 	}
 }
