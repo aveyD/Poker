@@ -1,17 +1,11 @@
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 public class Player {
 	private String name;
 	private List<Card> cards;
 	private List<Card> flopTurnRiver;
-	private ArrayList<ArrayList<Card>> allPossibleHoldemHands;
+	private List<PokerHand> allPossibleHoldemHands;
 	private PokerHandRank pokerHandRank;
 	private Rank highPair;
 	private boolean winner = false;
@@ -23,7 +17,7 @@ public class Player {
 		this.setName("Player " + playerNum);
 		this.setCards(new ArrayList<Card>());
 		this.setFlopTurnRiver(new ArrayList<Card>());
-		this.setAllPossibleHoldemHands(new ArrayList<ArrayList<Card>>());
+		this.setAllPossibleHoldemHands(new ArrayList<PokerHand>());
 	}
 
 	public String getName() {
@@ -70,11 +64,11 @@ public class Player {
 		return getName() + ": " + getCards();
 	}
 
-	public ArrayList<ArrayList<Card>> getAllPossibleHoldemHands() {
+	public List<PokerHand> getAllPossibleHoldemHands() {
 		return allPossibleHoldemHands;
 	}
 
-	public void setAllPossibleHoldemHands(ArrayList<ArrayList<Card>> arrayList) {
+	public void setAllPossibleHoldemHands(List<PokerHand> arrayList) {
 		this.allPossibleHoldemHands = arrayList;
 	}
 

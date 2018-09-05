@@ -37,9 +37,9 @@ public class Poker implements PokerService {
 		if (dealer) {
 			if (numPlayers == 0) {
 				bufferRead = new BufferedReader(new InputStreamReader(System.in));
-	
+
 				System.out.print("Enter the number of players playing poker: ");
-	
+
 				numPlayers = getNumberOfPlayers(bufferRead, readFromConsole);
 			}
 			if (numPlayers <= 1 || numPlayers > 10) {
@@ -80,48 +80,26 @@ public class Poker implements PokerService {
 				System.out.println(player.getName() + ": " + player.getPokerHandRank() + ": " + player.getCards());
 			}
 
-			
-			// determine what is the best poker hand
-//			PokerHandRank bestHand = PokerHandRank.HIGH_CARD;
-//			for (Player player : players) {
-//				if (player.getPokerHandRank().ordinal() > bestHand.ordinal()) {
-//					bestHand = player.getPokerHandRank();
-//				}
-//			}
-//
-//			ArrayList<ArrayList<Card>> allHands = new ArrayList<ArrayList<Card>>();
-//			for (Player player : players) {
-//				allHands.add((ArrayList<Card>) player.getCards());
-//			}
-//			determineBestHand(allHands);
-			
-			
-			// determine what is the best poker hand
-			PokerHandRank bestHand = PokerHandRank.HIGH_CARD;
+			List<PokerHand> allHands = new ArrayList<PokerHand>();
 			for (Player player : players) {
-				if (player.getPokerHandRank().ordinal() > bestHand.ordinal()) {
-					bestHand = player.getPokerHandRank();
-				}
+				PokerHand pokerHand = new PokerHand(player.getCards());
+				allHands.add(pokerHand);
 			}
+			List<PokerHand> bestPokerHands = determineBestHand(allHands);
 
-			// these are the player(s) with the best hand
+			// if any other player has a hand that ties the best hand we have multiple
+			// winners. These are the player(s) with the best hand
 			List<Player> playersWithBestHand = new ArrayList<Player>();
 			for (Player player : players) {
-				if (player.getPokerHandRank().equals(bestHand)) {
-					// any poker hand that is the best type of hand will be added to this list
+				PokerHand pokerHand = new PokerHand(player.getCards());
+
+				// really only need the first best poker hand since the compare doesn't compare
+				// suits unless it affects the rank.
+				PokerHand bestPokerHand = bestPokerHands.get(0);
+				if (PokerService.compareTo(pokerHand, bestPokerHand) == 0) {
 					playersWithBestHand.add(player);
+					player.setWinner(true);
 				}
-			}
-
-			boolean complexTieRuling = true; // TODO: this was added if we want all hand types to tie or use complex tie
-												// ruling
-			if (complexTieRuling) {
-				// takes into account lower/higher card wins and kickers
-				playersWithBestHand = complexRules(playersWithBestHand, bestHand);
-			}
-
-			for (Player player : playersWithBestHand) {
-				player.setWinner(true);
 			}
 
 			if (playersWithBestHand.size() > 1) {
@@ -132,38 +110,38 @@ public class Poker implements PokerService {
 
 			// print out the comma separated list of winning players if there are more than
 			// one
-			System.out.println(joinList(playersWithBestHand));
+			System.out.println(playersWithBestHand + "\n");
 		} else {
 			System.out.print("Game Over!");
 		}
 	}
 
-//	private static void determineBestHand(ArrayList<ArrayList<Card>> allHands) {
-//		// determine what is the best poker hand
-//		PokerHandRank bestHand = PokerHandRank.HIGH_CARD;
-//		for (List<Card> oneHand : allHands) {
-//			if (player.getPokerHandRank().ordinal() > bestHand.ordinal()) {
-//				bestHand = player.getPokerHandRank();
-//			}
-//		}
-//
-//		// these are the player(s) with the best hand
-//		List<Player> playersWithBestHand = new ArrayList<Player>();
-//		for (Player player : players) {
-//			if (player.getPokerHandRank().equals(bestHand)) {
-//				// any poker hand that is the best type of hand will be added to this list
-//				playersWithBestHand.add(player);
-//			}
-//		}
-//
-//		boolean complexTieRuling = true; // TODO: this was added if we want all hand types to tie or use complex tie
-//											// ruling
-//		if (complexTieRuling) {
-//			// takes into account lower/higher card wins and kickers
-//			playersWithBestHand = complexRules(playersWithBestHand, bestHand);
-//		}
-//	}
-	
+	private static List<PokerHand> determineBestHand(List<PokerHand> allHands) {
+		// determine what is the best poker hand rank
+		PokerHandRank bestHandRank = PokerHandRank.HIGH_CARD;
+		for (PokerHand pokerHand : allHands) {
+			rankHands(pokerHand);
+			if (pokerHand.getHandRank().ordinal() > bestHandRank.ordinal()) {
+				bestHandRank = pokerHand.getHandRank();
+			}
+		}
+
+		// these are all the best poker hands
+		ArrayList<PokerHand> bestRankedHands = new ArrayList<PokerHand>();
+		for (PokerHand pokerHand : allHands) {
+			rankHands(pokerHand);
+			if (pokerHand.getHandRank().equals(bestHandRank)) {
+				// any poker hand that is the best type of hand will be added to this list
+				bestRankedHands.add(pokerHand);
+			}
+		}
+
+		// takes into account lower/higher card wins and kickers
+		// if there are more than 1 winning poker hands they are equivalent hands
+		List<PokerHand> bestPokerHands = complexRules(bestRankedHands, bestHandRank);
+		return bestPokerHands;
+	}
+
 	private static boolean dealToPlayers(List<Player> players) {
 		boolean allValid = false;
 		if (texasHoldem) {
@@ -386,87 +364,57 @@ public class Poker implements PokerService {
 	 * @param bestHand            the hand rank that was the winning hand
 	 * @return the list of player(s) that actually is/are the winner(s)
 	 */
-	private static List<Player> complexRules(List<Player> playersWithBestHand, PokerHandRank bestHand) {
-		List<Player> winners = new ArrayList<Player>();
+	static List<PokerHand> complexRules(List<PokerHand> bestRankedHands, PokerHandRank bestHand) {
+		List<PokerHand> bestPokerHands = new ArrayList<PokerHand>();
 		// if a player has the best hand they will continue
 		switch (bestHand) {
 		case HIGH_CARD:
 		case STRAIGHT:
 		case FLUSH:
 		case STRAIGHT_FLUSH:
-			winners = rankHighCards(playersWithBestHand);
+			bestPokerHands = rankHighCards(bestRankedHands);
 			break;
 		case ONE_PAIR:
 		case TWO_PAIR:
-			winners = rankPairs(playersWithBestHand, 2);
+			bestPokerHands = rankPairs(bestRankedHands, 2);
 			break;
 		case THREE_OF_A_KIND:
 		case FULL_HOUSE:
-			winners = rankPairs(playersWithBestHand, 3);
+			bestPokerHands = rankPairs(bestRankedHands, 3);
 			break;
 		case FOUR_OF_A_KIND:
-			winners = rankPairs(playersWithBestHand, 4);
+			bestPokerHands = rankPairs(bestRankedHands, 4);
 			break;
 		default:
 			break;
 		}
-		return winners;
+		return bestPokerHands;
 	}
 
 	/**
 	 * for HIGH_CARD, FLUSH, STRAIGHT, STRAIGHT_FLUSH the highest card wins unless 2
 	 * or more have the same highest card of a different suit, then it goes to the
 	 * next highest card and so on
+	 * 
+	 * more efficient way to rank high cards using compareTo (includes kickers)
 	 */
-	static List<Player> rankHighCards(List<Player> playersWithBestHand) {
-		// new more efficient way to rank high cards using compareTo (includes kickers)
-		Player bestPlayer = playersWithBestHand.get(0);
-		List<Player> winners = new ArrayList<Player>();
-
+	static List<PokerHand> rankHighCards(List<PokerHand> bestRankedHands) {
+		List<PokerHand> bestPokerHands = new ArrayList<PokerHand>();
+		PokerHand bestPokerHand = bestRankedHands.get(0);
 		// determine the best player hand
-		for (Player player : playersWithBestHand) {
-			if (PokerService.compareTo(player, bestPlayer) > 0) {
-				bestPlayer = player;
+		for (PokerHand pokerHand : bestRankedHands) {
+			if (PokerService.compareTo(pokerHand, bestPokerHand) > 0) {
+				bestPokerHand = pokerHand;
 			}
 		}
 
-		// if any other player has a hand that ties the best hand we have multiple
-		// winners
-		for (Player player : playersWithBestHand) {
-			if (PokerService.compareTo(player, bestPlayer) == 0) {
-				winners.add(player);
+		// if there is a hand that ties the best hand we have multiple winners
+		for (PokerHand pokerHand : bestRankedHands) {
+			if (PokerService.compareTo(pokerHand, bestPokerHand) == 0) {
+				bestPokerHands.add(pokerHand);
 			}
 		}
-
-		// This was the old way of implementing this which didn't take into account the
-		// kicker --v
-//		Rank highCardRank = Rank.TWO;
-//		List<Player> winners = new ArrayList<Player>();
-//		
-//		// get highest card from all players
-//		for (Player player : playersWithBestHand)
-//		{
-//			Rank playerHighCard = player.getHighCardOrHighPair();
-//			highCardRank = playerHighCard.ordinal() > highCardRank.ordinal() ? playerHighCard : highCardRank;
-//		}
-//		
-//		System.out.println("The high card is: " + highCardRank.name());
-//		
-//		// if a players hand contains the high card then they are added to the winners list
-//		for (Player player : playersWithBestHand)
-//		{
-//			List<Rank> fullListOfRanks = new ArrayList<Rank>();
-//			for (Card card : player.getCards())
-//			{
-//				fullListOfRanks.add(card.getRank());
-//			}
-//			
-//			if (fullListOfRanks.contains(highCardRank))
-//			{
-//				winners.add(player);
-//			}
-//		}
-		return winners;
+		return bestPokerHands;
 	}
 
 	/**
@@ -474,14 +422,14 @@ public class Poker implements PokerService {
 	 * highest pair wins unless 2 or more have the same highest pair of a different
 	 * suit, then it goes to the next highest card and so on
 	 */
-	static List<Player> rankPairs(List<Player> playersWithBestHand, int pairSize) {
+	static List<PokerHand> rankPairs(List<PokerHand> bestRankedHands, int pairSize) {
 		Rank highCardRank = Rank.TWO;
-		List<Player> hasHighPair = new ArrayList<Player>();
-		List<Player> winners = new ArrayList<Player>();
+		List<PokerHand> hasHighPair = new ArrayList<PokerHand>();
 
 		// get highest pair from all players
-		for (Player player : playersWithBestHand) {
-			Rank playerHighCard = player.getHighPair();
+		for (PokerHand pokerHand : bestRankedHands) {
+
+			Rank playerHighCard = pokerHand.getHighPair();
 			highCardRank = playerHighCard.ordinal() > highCardRank.ordinal() ? playerHighCard : highCardRank;
 		}
 
@@ -489,10 +437,10 @@ public class Poker implements PokerService {
 
 		// if a players hand contains the high pair then they are added to the winners
 		// list
-		for (Player player : playersWithBestHand) {
+		for (PokerHand pokerHand : bestRankedHands) {
 			List<Rank> fullListOfRanks = new ArrayList<Rank>();
 			Map<Rank, Integer> rankMap = new HashMap<Rank, Integer>();
-			for (Card card : player.getCards()) {
+			for (Card card : pokerHand.getPokerHand()) {
 				Rank rank = card.getRank();
 				fullListOfRanks.add(rank);
 				Integer count = rankMap.get(rank);
@@ -501,12 +449,12 @@ public class Poker implements PokerService {
 
 			if (getHighPair(rankMap, pairSize) == highCardRank) {
 				// this player has the high pair but kickers need to be taken into account
-				hasHighPair.add(player);
+				hasHighPair.add(pokerHand);
 			}
 		}
-		winners = determineIfTie(hasHighPair);
+		List<PokerHand> bestPokerHands = determineIfTie(hasHighPair);
 
-		return winners;
+		return bestPokerHands;
 	}
 
 	/**
@@ -515,69 +463,46 @@ public class Poker implements PokerService {
 	 * @param hasHighPair the list of players with the high pair
 	 * @return the list of winner(s)
 	 */
-	private static List<Player> determineIfTie(List<Player> hasHighPair) {
-		Player bestPlayer = hasHighPair.get(0);
-		List<Player> winners = new ArrayList<Player>();
-
+	private static List<PokerHand> determineIfTie(List<PokerHand> hasHighPair) {
+		List<PokerHand> bestPokerHands = new ArrayList<PokerHand>();
+		PokerHand bestPokerHand = hasHighPair.get(0);
 		// determine the best player hand
-		for (Player player : hasHighPair) {
-			if (PokerService.compareToPair(player, bestPlayer) > 0) {
-				bestPlayer = player;
+		for (PokerHand pokerHand : hasHighPair) {
+			if (PokerService.compareToPair(pokerHand, bestPokerHand) > 0) {
+				bestPokerHand = pokerHand;
 			}
 		}
 
 		// if any other player has a hand that ties the best hand we have multiple
 		// winners
-		for (Player player : hasHighPair) {
-			if (PokerService.compareToPair(player, bestPlayer) == 0) {
-				winners.add(player);
+		for (PokerHand pokerHand : hasHighPair) {
+			if (PokerService.compareToPair(pokerHand, bestPokerHand) == 0) {
+				bestPokerHands.add(pokerHand);
 			}
 		}
-		return winners;
-	}
-
-	/**
-	 * Helper method to print out a comma separated list of players
-	 * 
-	 * @param list the list of players
-	 * @return
-	 */
-	public static String joinList(List<Player> list) {
-		return list.toString().replaceAll("[\\[.\\].\\s+]", "");
+		return bestPokerHands;
 	}
 
 	public static void rankAllHands() {
 		for (Player player : players) {
 			if (texasHoldem) {
 				initAllPossibleHoldemHands(player);
-				PokerHandRank bestHand = PokerHandRank.HIGH_CARD;
-				Rank bestPair = Rank.TWO;
-				player.setPokerHandRank(PokerHandRank.HIGH_CARD);
-				for (List<Card> oneHand : player.getAllPossibleHoldemHands()) {
-					HandRankResult handRankResult = rankHands(oneHand);
-
-					if (handRankResult.getHandRank().ordinal() > bestHand.ordinal()) {
-						player.setHighPair(null); // reset high pair on new better hand
-						bestHand = handRankResult.getHandRank();
-						player.setCards(oneHand);
-						player.setPokerHandRank(handRankResult.getHandRank());
-						if (handRankResult.getHighPair() != null
-								&& handRankResult.getHighPair().ordinal() > bestPair.ordinal()) {
-							player.setHighPair(handRankResult.getHighPair());
-						}
-					} else if (handRankResult.getHandRank().ordinal() == bestHand.ordinal()) {
-						if (handRankResult.getHighPair() != null
-								&& handRankResult.getHighPair().ordinal() > bestPair.ordinal()) {
-							bestPair = handRankResult.getHighPair();
-							player.setHighPair(handRankResult.getHighPair());
-							player.setCards(oneHand);
-						}
-					}
+				List<PokerHand> bestHands = determineBestHand(player.getAllPossibleHoldemHands());
+				if (bestHands.size() > 1) {
+					System.out
+							.println("We have multiple winning hands for player[" + player.getName() + "]" + bestHands);
+				}
+				for (PokerHand bestHand : bestHands) {
+					rankHands(bestHand);
+					player.setCards(bestHand.getPokerHand());
+					player.setPokerHandRank(bestHand.getHandRank());
+					player.setHighPair(bestHand.getHighPair());
 				}
 			} else {
-				HandRankResult handRankResult = rankHands(player.getCards());
-				player.setPokerHandRank(handRankResult.getHandRank());
-				player.setHighPair(handRankResult.getHighPair());
+				PokerHand pokerHand = new PokerHand(player.getCards());
+				rankHands(pokerHand);
+				player.setPokerHandRank(pokerHand.getHandRank());
+				player.setHighPair(pokerHand.getHighPair());
 			}
 		}
 	}
@@ -671,16 +596,16 @@ public class Poker implements PokerService {
 //		}
 //		System.out.println(output);
 //	}
-	
+
 	private static void setOnePokerHand(Player player, int[] combination, Card[] elements) {
 		ArrayList<Card> oneHand = new ArrayList<Card>();
 		for (int z = 0; z < combination.length; z++) {
 			oneHand.add(elements[combination[z]]);
-		} 
-		player.getAllPossibleHoldemHands().add(oneHand);
+		}
+		PokerHand pokerHand = new PokerHand(oneHand);
+		player.getAllPossibleHoldemHands().add(pokerHand);
 //		System.out.println(oneHand);
 	}
-	
 
 //	private static void initAllPossibleHoldemHands(Player player) {
 //		List<Card> input = player.getCards();    // input array
@@ -722,16 +647,15 @@ public class Poker implements PokerService {
 	/**
 	 * Rank the hands from best to worst and set it on the player objects
 	 */
-	public static HandRankResult rankHands(List<Card> hand) {
+	public static void rankHands(PokerHand hand) {
 		Set<Suit> suits = new HashSet<Suit>();
 		Set<Rank> ranks = new HashSet<Rank>();
 		Map<Rank, Integer> rankMap = new HashMap<Rank, Integer>();
 		List<Rank> fullListOfRanks = new ArrayList<Rank>();
-		HandRankResult handRankResult = new HandRankResult();
 
 		// add suits and ranks to a set to remove duplicates
 		// also add each rank to a map with the count of how many times it appears
-		for (Card card : hand) {
+		for (Card card : hand.getPokerHand()) {
 			Rank rank = card.getRank();
 			suits.add(card.getSuit());
 			ranks.add(rank);
@@ -743,7 +667,7 @@ public class Poker implements PokerService {
 
 		// if it's a flush there will only be one suit
 		if (suits.size() == 1) {
-			handRankResult.setHandRank(PokerHandRank.FLUSH);
+			hand.setHandRank(PokerHandRank.FLUSH);
 		}
 
 		// if it's a high card or a strait there will be 5 ranks
@@ -763,34 +687,34 @@ public class Poker implements PokerService {
 			if (straight) {
 				// it's both a straight and a flush
 				if (suits.size() == 1) {
-					handRankResult.setHandRank(PokerHandRank.STRAIGHT_FLUSH);
+					hand.setHandRank(PokerHandRank.STRAIGHT_FLUSH);
 				} else {
-					handRankResult.setHandRank(PokerHandRank.STRAIGHT);
+					hand.setHandRank(PokerHandRank.STRAIGHT);
 				}
 			} else if (suits.size() != 1) {
-				handRankResult.setHandRank(PokerHandRank.HIGH_CARD);
+				hand.setHandRank(PokerHandRank.HIGH_CARD);
 				Rank highestRank = Collections.max(ranks);
-				handRankResult.setHighPair(highestRank);
+				hand.setHighPair(highestRank);
 			}
 		}
 
 		// if it's a one pair there will be 4 ranks
 		if (ranks.size() == 4) {
-			handRankResult.setHandRank(PokerHandRank.ONE_PAIR);
-			handRankResult.setHighPair(getHighPair(rankMap, 2));
+			hand.setHandRank(PokerHandRank.ONE_PAIR);
+			hand.setHighPair(getHighPair(rankMap, 2));
 		}
 
 		// if it's three of a kind or two of a kind there will be 3 ranks
 		if (ranks.size() == 3) {
 			// the rank map will contain 2 ranks with value 2
 			if (rankMap.containsValue(2)) {
-				handRankResult.setHandRank(PokerHandRank.TWO_PAIR);
-				handRankResult.setHighPair(getHighPair(rankMap, 2));
+				hand.setHandRank(PokerHandRank.TWO_PAIR);
+				hand.setHighPair(getHighPair(rankMap, 2));
 			}
 			// the rank map will contain 1 rank with value 3
 			else if (rankMap.containsValue(3)) {
-				handRankResult.setHandRank(PokerHandRank.THREE_OF_A_KIND);
-				handRankResult.setHighPair(getHighPair(rankMap, 3));
+				hand.setHandRank(PokerHandRank.THREE_OF_A_KIND);
+				hand.setHighPair(getHighPair(rankMap, 3));
 			}
 		}
 
@@ -798,16 +722,15 @@ public class Poker implements PokerService {
 		if (ranks.size() == 2) {
 			// the rank map will contain 1 rank with value 4
 			if (rankMap.containsValue(4)) {
-				handRankResult.setHandRank(PokerHandRank.FOUR_OF_A_KIND);
-				handRankResult.setHighPair(getHighPair(rankMap, 4));
+				hand.setHandRank(PokerHandRank.FOUR_OF_A_KIND);
+				hand.setHighPair(getHighPair(rankMap, 4));
 			}
 			// the rank map will contain 1 rank with value 3 and 1 rank with value 2
 			else if (rankMap.containsValue(3) && rankMap.containsValue(2)) {
-				handRankResult.setHandRank(PokerHandRank.FULL_HOUSE);
-				handRankResult.setHighPair(getHighPair(rankMap, 3));
+				hand.setHandRank(PokerHandRank.FULL_HOUSE);
+				hand.setHighPair(getHighPair(rankMap, 3));
 			}
 		}
-		return handRankResult;
 	}
 
 	/**

@@ -15,15 +15,15 @@ public interface PokerService {
 	 * @param player the player to compare against
 	 * @return the compare result
 	 */
-	public static int compareTo(Player player1, Player player2) {
-		List<Card> player1Cards = player1.getCards();
-		List<Card> player2Cards = player2.getCards();
+	public static int compareTo(PokerHand hand1, PokerHand hand2) {
+		List<Card> hand1Cards = hand1.getPokerHand();
+		List<Card> hand2Cards = hand2.getPokerHand();
 
 		// sort from highest to lowest
-		Collections.sort(player1Cards, Collections.reverseOrder());
-		Collections.sort(player2Cards, Collections.reverseOrder());
+		Collections.sort(hand1Cards, Collections.reverseOrder());
+		Collections.sort(hand2Cards, Collections.reverseOrder());
 
-		return compareCards(player1Cards, player2Cards);
+		return compareCards(hand1Cards, hand2Cards);
 	}
 
 	/**
@@ -33,15 +33,15 @@ public interface PokerService {
 	 * @param player the player to compare against
 	 * @return the compare result
 	 */
-	public static int compareToPair(Player player1, Player player2) {
-		List<Card> player1Cards = player1.getCards();
-		List<Card> player2Cards = player2.getCards();
+	public static int compareToPair(PokerHand hand1, PokerHand hand2) {
+		List<Card> hand1Cards = hand1.getPokerHand();
+		List<Card> hand2Cards = hand2.getPokerHand();
 
 		// Sort list by pairs first then highest to lowest
-		player1Cards = complexListSort(player1Cards);
-		player2Cards = complexListSort(player2Cards);
+		hand1Cards = complexListSort(hand1Cards);
+		hand2Cards = complexListSort(hand2Cards);
 
-		return compareCards(player1Cards, player2Cards);
+		return compareCards(hand1Cards, hand2Cards);
 	}
 
 	/**
@@ -54,13 +54,17 @@ public interface PokerService {
 	static int compareCards(List<Card> player1Cards, List<Card> player2Cards) {
 		int compareVal = 0;
 
-		for (int i = 0; i < 5; i++) {
-			if (player1Cards.get(i).getRank().ordinal() > player2Cards.get(i).getRank().ordinal()) {
-				compareVal = 1;
-				break;
-			} else if (player1Cards.get(i).getRank().ordinal() < player2Cards.get(i).getRank().ordinal()) {
-				compareVal = -1;
-				break;
+		if (player1Cards.size() < 5 || player2Cards.size() < 5) {
+			System.out.println("Error comparing cards. Hand size is less than 5.");
+		} else {
+			for (int i = 0; i < 5; i++) {
+				if (player1Cards.get(i).getRank().ordinal() > player2Cards.get(i).getRank().ordinal()) {
+					compareVal = 1;
+					break;
+				} else if (player1Cards.get(i).getRank().ordinal() < player2Cards.get(i).getRank().ordinal()) {
+					compareVal = -1;
+					break;
+				}
 			}
 		}
 		return compareVal;

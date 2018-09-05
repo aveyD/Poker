@@ -91,6 +91,7 @@ public class Dealer {
 			generated.add(next);
 		}
 		if (flopTurnRiver) {
+			getFlopTurnRiver().clear();
 			while (generated.size() < (playerCards + 5)) {
 				Integer next = rng.nextInt(deck.size() - 1) + 1;
 				generated.add(next);
