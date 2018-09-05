@@ -104,7 +104,6 @@ public class Dealer {
 				player.getCards().add(deck.get(card));
 			} else {
 				if (flopTurnRiver) {
-					System.out.println("We made it to the flop/turn/river.");
 					getFlopTurnRiver().add(deck.get(card));
 				} else {
 					System.out.println("Something went wrong.");
@@ -114,6 +113,12 @@ public class Dealer {
 				playerNum = 0;
 			} else {
 				playerNum++;
+			}
+		}
+		if (flopTurnRiver) {
+			System.out.println("Flop/Turn/River: " + getFlopTurnRiver());
+			for (Player player : players) {
+				player.setFlopTurnRiver(getFlopTurnRiver());
 			}
 		}
 		return true;
